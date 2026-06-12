@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serene Bay Studio — Creative CMS Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .ql-container.ql-snow { border: 1px solid #e2e8f0 !important; border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem; background: white; min-height: 300px; font-size: 1rem; }
+        .ql-toolbar.ql-snow { border: 1px solid #e2e8f0 !important; border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; background: #f1f5f9; }
+    </style>
+</head>
+<body class="min-h-screen p-6 md:p-12">
+
+    <div class="max-w-4xl mx-auto space-y-8">
+        <div class="flex justify-between items-center bg-white p-6 rounded-xl border border-slate-200/80 shadow-sm">
+            <div>
+                <h1 class="text-xl font-semibold text-slate-900">Serene Bay Studio</h1>
+                <p class="text-xs text-slate-500">Standalone Content Management Workspace</p>
+            </div>
+            <a href="index.html" class="text-xs font-medium text-slate-500 hover:text-slate-900 border border-slate-200 px-4 py-2 rounded-lg bg-slate-50 transition-colors">
+                ← View Live Site
+            </a>
+        </div>
+
+        <div class="bg-white p-8 rounded-xl border border-slate-200/80 shadow-sm space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-2">Essay Title</label>
+                    <input type="text" id="input-title" class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-cyan-600/20 focus:border-cyan-600 outline-none text-sm transition-all" placeholder="e.g., The Architecture of Movement and Waves">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-2">Category Tag</label>
+                    <input type="text" id="input-category" class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-cyan-600/20 focus:border-cyan-600 outline-none text-sm transition-all" placeholder="e.g., Essays, Musings, Maritime">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-2">Fine Art Photography Link (Image URL)</label>
+                    <input type="text" id="input-image" class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-cyan-600/20 focus:border-cyan-600 outline-none text-sm transition-all" placeholder="https://images.unsplash.com/photo-...">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-2">Photo Caption Frame</label>
+                    <input type="text" id="input-caption" class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-cyan-600/20 focus:border-cyan-600 outline-none text-sm transition-all" placeholder="e.g., I. Coastal Solitude — Pacific Horizon">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-2">Manuscript body (WYSIWYG Editor)</label>
+                <div id="editor-container"></div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                <div id="status-msg" class="text-xs font-medium text-emerald-600 opacity-0 transition-opacity duration-300">
+                    ✓ Content synced to live database successfully.
+                </div>
+                <button onclick="publishToSupabase()" id="btn-submit" class="bg-cyan-900 hover:bg-cyan-950 text-white text-xs font-semibold tracking-wider uppercase px-6 py-3 rounded-lg transition-all shadow-md shadow-cyan-900/10">
+                    Publish Live Edition
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Paste your personal Supabase Credentials inside these quotes! (Must match index.html)
+        const SUPABASE_URL = "YOUR_SUPABASE_URL";
+        const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Setup Rich Text Editor Configuration
+        const quill = new Quill('#editor-container', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [2, 3, false] }],
+                    ['bold', 'italic', 'underline'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['clean']
+                ]
+            }
+        });
+
+        // Load current content into form upon arriving so you aren't starting blind
+        async function loadCurrentContent() {
+            let { data: posts } = await supabase.from('posts').select('*').order('id', { ascending: false }).limit(1);
+            if (posts && posts.length > 0) {
+                const post = posts[0];
+                document.getElementById('input-title').value = post.title;
+                document.getElementById('input-category').value = post.category;
+                document.getElementById('input-image').value = post.image_url;
+                document.getElementById('input-caption').value = post.caption;
+                quill.root.innerHTML = post.body_html;
+            }
+        }
+
+        async function publishToSupabase() {
+            const btn = document.getElementById('btn-submit');
+            const status = document.getElementById('status-msg');
+            
+            btn.innerText = "SYNCING...";
+            btn.disabled = true;
+
+            const payload = {
+                title: document.getElementById('input-title').value,
+                category: document.getElementById('input-category').value,
+                image_url: document.getElementById('input-image').value,
+                caption: document.getElementById('input-caption').value,
+                body_html: quill.root.innerHTML,
+                date_string: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+            };
+
+            // Inserts a new row structure into your cloud table database seamlessly
+            const { error } = await supabase.from('posts').insert([payload]);
+
+            btn.innerText = "Publish Live Edition";
+            btn.disabled = false;
+
+            if (!error) {
+                status.classList.remove('opacity-0');
+                setTimeout(() => status.classList.add('opacity-0'), 4000);
+            } else {
+                alert("Error publishing entries: " + error.message);
+            }
+        }
+
+        if(SUPABASE_URL !== "YOUR_SUPABASE_URL") {
+            loadCurrentContent();
+        }
+    </script>
+</body>
+  </html>
