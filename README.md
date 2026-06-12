@@ -1,51 +1,42 @@
-# 🌊 Serene Bay — Setup & Deployment Guide
+# 🌊 Serene Bay — Studio Installation Manual
 
-Welcome to **Serene Bay**, your clean, elegant ocean photography and personal literary journal. This project has a built-in interactive visual content editor (WYSIWYG CMS). You can update your photography links, text formats, and titles live on your website inside your web browser. 
+This setup features a public frontend portfolio journal (`index.html`) and an entirely isolated custom workspace editor (`editor.html`). 
 
-Follow this manual step-by-step to get your website up on the internet completely free using GitHub and Vercel.
-
----
-
-## 🛠️ Step 1: Create a Free GitHub Account
-GitHub is an online hosting system that holds your code files securely.
-1. Open your web browser and go to [https://github.com](https://github.com).
-2. Click **Sign up** in the top-right corner.
-3. Fill out your email, establish a secure password, choose a unique username, and complete the verification step.
+By connecting a free cloud database tier with Supabase, your text formatting and photo updates persist globally. Anyone across the internet will immediately see what you publish from your dashboard!
 
 ---
 
-## 📁 Step 2: Upload Your Website Files to GitHub
-You don't need any special developer software to upload your files; you can do it right inside your web browser.
-1. Once logged into GitHub, look at the top right of the page and click the **`+` (Plus)** icon, then select **New repository**.
-2. Set up your repository with these exact configurations:
-   * **Repository name:** Type `serene-bay`
-   * **Public/Private:** Select **Public**
-   * Leave everything else unchecked/as-is.
-3. Scroll to the bottom and click the green **Create repository** button.
-4. You will see a setup screen. Look for the link that says: **"uploading an existing file"**. Click it.
-5. Open your local computer file folder where you saved `index.html` and `README.md`. 
-6. Drag both files directly into your web browser box to load them.
-7. Scroll down to the bottom of the page and click the green **Commit changes** button. Your files are now safely stored online!
+## ☁️ Step 1: Initialize Your Free Database (Supabase)
+Don't worry, there is no code involved here. It is entirely configuration via buttons.
+1. Open your browser and create an account at [https://supabase.com](https://supabase.com) by choosing **Sign Up with GitHub**.
+2. Inside your main panel overview, click **New Project**.
+3. Set your project parameters:
+   * **Name:** `serene-bay-db`
+   * **Database Password:** Enter any secure password (make sure to write it down!)
+   * **Region:** Select the area physically closest to you.
+   * **Pricing Plan:** Select the **Free Tier** ($0/month).
+4. Click **Create New Project** and allow 1-2 minutes for the cloud servers to initialize.
 
 ---
 
-## 🚀 Step 3: Publish Live to Vercel
-Vercel turns your code files on GitHub into a live web address accessible by anyone across the world.
-1. Open a new browser tab and navigate to [https://vercel.com](https://vercel.com).
-2. Click **Sign Up** in the upper-right corner.
-3. Select **Continue with GitHub**. A pop-up box will appear asking to authorize Vercel; click **Authorize Vercel**.
-4. Once you are inside your new dashboard, click the blue button labeled **Add New...** and select **Project**.
-5. You will see a section titled *"Import Git Repository"*. Find your `serene-bay` project repository in that list and click the **Import** button right next to it.
-6. A configurations page will load. **Do not change any settings here**. The default options are perfectly set up for this project.
-7. Click the **Deploy** button.
-8. Wait roughly 30 seconds while Vercel compiles the web assets. Once done, confetti will hit the screen, and you will see a preview thumbnail layout of your site!
+## 🗄️ Step 2: Establish the Post Structure
+Your database needs to understand how to organize your titles, text, and images.
+1. In the left-hand column sidebar of your Supabase page, click on the **SQL Editor** icon (it resembles a small box with terminal characters `>_`).
+2. Click **New Query** at the top left of the screen.
+3. Clear out any sample text and copy-paste this precise table blueprint into the code window box:
 
----
+```sql
+create table posts (
+  id bigint generated always as identity primary key,
+  title text,
+  category text,
+  image_url text,
+  caption text,
+  body_html text,
+  date_string text
+);
 
-## 📝 Step 4: Access and Manage Your Content
-1. Click on the image thumbnail display inside Vercel to launch your new web page address (e.g., `https://serene-bay.vercel.app`).
-2. Click the dark button labeled **Open CMS Panel** in the top right header navigation bar.
-3. Modify the article title text, change the image address placeholder link (using high-quality images from sites like Unsplash), alter the categories, and use the visual editor text block to type or format your deep reflections.
-4. Click **Apply and Save Changes**. The site updates instantly without changing code!
-
-*Note: This sleek template uses `localStorage` architecture, keeping your written words saved directly within your browser profile cache.*
+-- Turn off data lock rules so your simple dashboard can write data safely
+alter table posts enable row level security;
+create policy "Allow public access" on posts for select using (true);
+create policy "Allow public modifications" on posts for insert with check (true);
